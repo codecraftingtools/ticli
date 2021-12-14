@@ -5,12 +5,6 @@ from decopatch import class_decorator, DECORATED
 @class_decorator
 def group(C=DECORATED):
 
-    # Extract the option parameters
-    def _extract_option_params(_options):
-        options_sig = inspect.signature(_options)
-        option_params = list(options_sig.parameters.values())[1:]
-        return option_params
-
     # Construct an __init__() signature that includes options
     def _construct_init_sig(_init, option_params):
         init_sig = inspect.signature(_init)
@@ -36,7 +30,7 @@ def group(C=DECORATED):
         for p in reversed(invoke_params):
             if p.kind in [ inspect.Parameter.VAR_KEYWORD,
                            inspect.Parameter.KEYWORD_ONLY,
-                           inspect.Parameter.VAR_POSITIONAL]:
+                           inspect.Parameter.VAR_POSITIONAL ]:
                 trailing_invoke_params.insert(0, leading_invoke_params.pop())
         call_sig = invoke_sig.replace(
             parameters=leading_invoke_params + option_params + \
@@ -82,8 +76,9 @@ def group(C=DECORATED):
                 pass
 
         # Extract information about options from the method signature
-        _option_params = _extract_option_params(_options)
         _option_names = inspect.getfullargspec(_options)[0][1:]
+        _options_sig = inspect.signature(_options)
+        _option_params = list(_options_sig.parameters.values())[1:]
         
         # Define an __init__() that handles options before calling _init()
         _init_sig = _construct_init_sig(_init, _option_params)
@@ -96,7 +91,6 @@ def group(C=DECORATED):
             self._options(**option_kw)
             return self._init(*args, **kw)
         
-
         # Define a __call__() that handles options before calling _invoke()
         _call_sig = _construct_call_sig(_invoke, _option_params)    
         @with_signature(_call_sig)

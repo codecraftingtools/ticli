@@ -16,7 +16,7 @@ class Test_Options:
               a: first arg
               b: second arg
         """
-        print(f"_check_options: a:{a} b:{b}")
+        print(f"_options: a:{a} b:{b}")
 
     def _init(self, x:int=8, y:int=9):
         """ Args:
