@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# Copyright (C) 2021 NTA, Inc.
+
 import fire
 from ticli import option
 

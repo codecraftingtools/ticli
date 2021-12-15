@@ -1,3 +1,5 @@
+# Copyright (C) 2021 NTA, Inc.
+
 import inspect
 from makefun import with_signature
 from decopatch import class_decorator, DECORATED
