@@ -25,12 +25,14 @@ class Test_Options:
         """
         print(f"_init: x:{x} y:{y}")
 
-    def _invoke(self, invoke1):
+    def _invoke(self, arg):
         """ Args:
               invoke1: first invoke arg
         """
-        print("_invoke", invoke1)
-        return self
+        print("_invoke", arg)
+
+    def f(self, c=3):
+        print("f", c)
     
 if __name__ == '__main__':
     

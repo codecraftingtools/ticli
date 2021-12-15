@@ -2,6 +2,12 @@ import inspect
 from makefun import with_signature
 from decopatch import class_decorator, DECORATED
 
+try:
+    import fire.decorators
+    _fire_package_present = True
+except:
+    _fire_package_present = False
+
 @class_decorator
 def group(C=DECORATED):
 
@@ -84,6 +90,10 @@ def group(C=DECORATED):
         _init_sig = _construct_init_sig(_init, _option_params)
         @with_signature(_init_sig)
         def __init__(self, *args, **kw):
+            self._option_data = {}
+            if _fire_package_present:
+                fire.decorators._SetMetadata(
+                    self, fire.decorators.FIRE_DEFAULTS_DICT, self._option_data)
             option_kw = {}
             for o_name in self._option_names:
                 if o_name in kw:
