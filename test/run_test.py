@@ -8,33 +8,35 @@ from ticli import option
 @option.group
 class Test_Options:
     """
-    Class.
+    Testing Options.
 
-    More Class.
+    Group of options for testing purposes.
+
+    Args:
+      a: first option
+      b: second option
     """
-    
-    def _options(self, a:int=1, b:int=2):
-        """ Args:
-              a: first arg
-              b: second arg
-        """
-        print(f"_options: a:{a} b:{b}")
+    a: int = 1
+    b: int = 2
 
-    def _init(self, x:int=8, y:int=9):
+    def __post_init__(self, x:int=8, y:int=9):
         """ Args:
               x: first init arg
               y: second init arg
         """
-        print(f"_init: x:{x} y:{y}")
+        print(f"__post_init__: x:{x} y:{y}")
 
-    def _invoke(self, arg):
+    def __post_call__(self, arg):
         """ Args:
-              invoke1: first invoke arg
+              arg: first invoke arg
         """
-        print("_invoke", arg)
+        print(f"__post_call__: arg:{arg}")
 
     def f(self, c=3):
-        print("f", c)
+        """ Args:
+              c: first f arg
+        """
+        print(f"f: c:{c}")
     
 if __name__ == '__main__':
     
