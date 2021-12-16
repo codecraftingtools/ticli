@@ -34,7 +34,7 @@ def group(C=DECORATED):
     for n in option_names:
         p = inspect.Parameter(
             name=n,
-            kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            kind=inspect.Parameter.KEYWORD_ONLY,
             default=option_values.get(n,inspect.Parameter.empty),
             annotation=option_types[n])
         option_params.append(p)
@@ -42,37 +42,23 @@ def group(C=DECORATED):
     option_params_with_self = [self_param] + option_params
     options_sig = ref_sig.replace(parameters=option_params_with_self)
 
-    # Construct an __init__() signature that includes options
-    def _construct_init_sig(__post_init__):
-        post_init_sig = inspect.signature(__post_init__)
-        post_init_params = list(post_init_sig.parameters.values())
-        leading_init_params = list(post_init_params)
-        trailing_init_params = []
-        for p in reversed(post_init_params):
+    # Extract a function signature and insert kw-only options
+    def _construct_sig_with_inserted_options(source_func, skip_self=True):
+        source_sig = inspect.signature(source_func)
+        source_params = list(source_sig.parameters.values())
+        if skip_self:
+            source_params = source_params[1:]
+        leading_new_params = list(source_params)
+        trailing_new_params = []
+        for p in reversed(source_params):
             if p.kind in [ inspect.Parameter.VAR_KEYWORD,
-                           inspect.Parameter.KEYWORD_ONLY,
-                           inspect.Parameter.VAR_POSITIONAL ]:
-                trailing_init_params.insert(0, leading_init_params.pop())
-        init_sig = post_init_sig.replace(
-            parameters = leading_init_params + option_params +
-                         trailing_init_params)
-        return init_sig
+                           inspect.Parameter.KEYWORD_ONLY ]:
+                trailing_new_params.insert(0, leading_new_params.pop())
+        new_params = leading_new_params + option_params + \
+                      trailing_new_params
+        new_sig = source_sig.replace(parameters=new_params)
+        return new_sig
     
-    # Construct a __call__() signature that includes options
-    def _construct_call_sig(__post_call__):
-        post_call_sig = inspect.signature(__post_call__)
-        post_call_params = list(post_call_sig.parameters.values())
-        leading_call_params = list(post_call_params)
-        trailing_call_params = []
-        for p in reversed(post_call_params):
-            if p.kind in [ inspect.Parameter.VAR_KEYWORD,
-                           inspect.Parameter.KEYWORD_ONLY,
-                           inspect.Parameter.VAR_POSITIONAL ]:
-                trailing_call_params.insert(0, leading_call_params.pop())
-        call_sig = post_call_sig.replace(
-            parameters=leading_call_params + option_params + \
-                       trailing_call_params)
-        return call_sig
     
     # Piece together top-level documentation string
     def _make_doc(cls):
@@ -107,38 +93,82 @@ def group(C=DECORATED):
         _option_names = option_names
         
         # Define an __init__() that handles any supplied options before
-        # calling __post_init__()
-        _init_sig = _construct_init_sig(__post_init__)
-        @with_signature(_init_sig)
+        # calling __post_init__() without the option parameters.
         def __init__(self, *args, **kw):
             self._option_data = {}
             if _fire_package_present:
+                # Tell fire to use the current option values as defaults
                 fire.decorators._SetMetadata(
-                    self, fire.decorators.FIRE_DEFAULTS_DICT, self._option_data)
-            option_kw = {}
-            for o_name in self._option_names:
-                if o_name in kw:
-                    option_kw[o_name] = kw.pop(o_name)
+                    self, fire.decorators.FIRE_DEFAULTS_DICT,
+                    self._option_data)
+                # Tell fire to use the desired signature for __call__
+                fire.decorators._SetMetadata(
+                    self, fire.decorators.FIRE_STAND_IN, D._dummy_call)
+            print(f"__init__ args: {args} kw: {kw}")
+            option_kw = self._extract_option_kw(kw)
             self._set_option_attrs_from_args(**option_kw)
             return self.__post_init__(*args, **kw)
+
+        # Construct an __init__() signature for use with fire
+        _init_sig = _construct_sig_with_inserted_options(__post_init__)
+        @with_signature(_init_sig)
+        def _dummy_init(self):
+            pass
         
         # Define a __call__() that handles any supplied options before
-        # calling __post_call__()
-        _call_sig = _construct_call_sig(__post_call__)    
-        @with_signature(_call_sig)
+        # calling __post_call__() without the option parameters.
         def __call__(self, *args, **kw):
-            option_kw = {}
-            for o_name in self._option_names:
-                if o_name in kw:
-                    option_kw[o_name] = kw.pop(o_name)
+            print(f"__call__ args: {args} kw: {kw}")
+            option_kw = self._extract_option_kw(kw)
             self._set_option_attrs_from_args(**option_kw)
             return self.__post_call__(*args, **kw)
         
-        @with_signature(options_sig)
-        def _set_option_attrs_from_args(self, **kw):
+        # Construct a __call__() signature for use with fire
+        _call_sig = _construct_sig_with_inserted_options(__post_call__)
+        @with_signature(_call_sig)
+        def _dummy_call(self):
             pass
-    
+        
+        def _extract_option_kw(self, kw):
+            option_kw = {}
+            for o_name in self._option_names:
+                if o_name in kw:
+                    option_kw[o_name] = kw.pop(o_name)
+            return option_kw
+        
+        def _set_option_attrs_from_args(self, **kw):
+            print(f"  setting options: {kw}")
+            for key, value in kw.items():
+                self._option_data[key] = value
+
+        # Placeholder
+        def _set_missing_option_attrs_from_defaults(self):
+            pass
+
+        def __getattr__(self, key):
+            if key in self._option_data:
+                return self._option_data[key]
+            else:
+                raise AttributeError
+            
+        def __setattr__(self, key, value):
+            if key != "_option_data" and key in self._option_data:
+                print(f"setting {key} to {value}")
+                self._option_data[key] = value
+                return
+            return super().__setattr__(key, value)
+         
+        def _restore_defaults(self):
+            self._option_data.clear()
+            
         # Piece together top-level documentation string
         __doc__ = _make_doc(C)
+        
+    if _fire_package_present:
+        fire.decorators._SetMetadata(
+            D, fire.decorators.FIRE_STAND_IN, D._dummy_init)
     
     return D
+
+def restore_defaults(s):
+    s._restore_defaults()

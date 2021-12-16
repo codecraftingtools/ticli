@@ -26,17 +26,30 @@ class Test_Options:
         """
         print(f"__post_init__: x:{x} y:{y}")
 
-    def __post_call__(self, arg):
+    def __post_call__(self, arg=7):
         """ Args:
               arg: first invoke arg
         """
         print(f"__post_call__: arg:{arg}")
+        return self
+    
+    def f(self, c):
+        """
+        Example Command.
 
-    def f(self, c=3):
-        """ Args:
-              c: first f arg
+        Does something mysterious. 
+
+        Args:
+          c: input argument for f command
         """
         print(f"f: c:{c}")
+
+    def reset(self):
+        """
+        Restores option settings to the default values.
+        """
+        option.restore_defaults(self)
+        return self
     
 if __name__ == '__main__':
     
