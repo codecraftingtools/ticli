@@ -6,7 +6,7 @@ import fire
 from ticli import option
 
 @option.group
-class Test_Options:
+class Test:
     """
     Testing Options.
 
@@ -57,4 +57,4 @@ if __name__ == '__main__':
     import os
     os.environ["PAGER"] = "cat"
     
-    fire.Fire(Test_Options)
+    fire.Fire(Test)

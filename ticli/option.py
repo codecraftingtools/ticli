@@ -88,6 +88,10 @@ def group(C=DECORATED):
         else:
             def __post_call__(self):
                 pass
+        if not "__str__" in C.__dict__:
+            # Otherwise help is printed on command completion in fire
+            def __str__(self):
+                return ""
 
         # Capture option names for use in __init__ and __call__
         _option_names = option_names
