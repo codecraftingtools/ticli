@@ -1,8 +1,15 @@
 # Copyright (C) 2021 NTA, Inc.
 
+import sys
 import inspect
 from makefun import with_signature
 from decopatch import class_decorator, DECORATED
+from .validation import (
+    check_type,
+    print_validation_errors,
+    ValidationError,
+    validate_arguments,
+)
 
 try:
     import fire.decorators
@@ -43,8 +50,7 @@ def group(C=DECORATED):
     options_sig = ref_sig.replace(parameters=option_params_with_self)
 
     # Extract a function signature and insert kw-only options
-    def _construct_sig_with_inserted_options(source_func, skip_self=True):
-        source_sig = inspect.signature(source_func)
+    def _construct_sig_with_inserted_options(source_sig, skip_self=True):
         source_params = list(source_sig.parameters.values())
         if skip_self:
             source_params = source_params[1:]
@@ -77,6 +83,9 @@ def group(C=DECORATED):
         return "".join(docs)
         
     class D(C):
+        # Capture option names for use in __init__ and __call__
+        _option_names = option_names
+        
         # Provide default implementations for required methods, if necessary
         if hasattr(C, "__post_init__"):
             __post_init__ = C.__post_init__
@@ -93,8 +102,15 @@ def group(C=DECORATED):
             def __str__(self):
                 return ""
 
-        # Capture option names for use in __init__ and __call__
-        _option_names = option_names
+        # Construct an __init__() signature for use with fire
+        _post_init_sig = inspect.signature(__post_init__)
+        _init_sig = _construct_sig_with_inserted_options(_post_init_sig)
+        @with_signature(_init_sig)
+        def _dummy_init(self):
+            pass
+
+        # Extract the __post_init__ parameter names
+        _post_init_param_names = list(_post_init_sig.parameters.keys())[1:]
         
         # Define an __init__() that handles any supplied options before
         # calling __post_init__() without the option parameters.
@@ -109,28 +125,53 @@ def group(C=DECORATED):
                 fire.decorators._SetMetadata(
                     self, fire.decorators.FIRE_STAND_IN, D._dummy_call)
             print(f"__init__ args: {args} kw: {kw}")
+            print(f"             : option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
+            self._set_missing_option_attrs_from_defaults()
             self._set_option_attrs_from_args(**option_kw)
+            try:
+                self._validate_post_init_args(*args, **kw)
+            except ValidationError as exc:
+                print_validation_errors(
+                    exc, value_dict=kw,
+                    arg_names=self._post_init_param_names, arg_values=args)
+                sys.exit(-1)
             return self.__post_init__(*args, **kw)
 
-        # Construct an __init__() signature for use with fire
-        _init_sig = _construct_sig_with_inserted_options(__post_init__)
-        @with_signature(_init_sig)
-        def _dummy_init(self):
+        @validate_arguments
+        @with_signature(inspect.signature(__post_init__))
+        def _validate_post_init_args(self, *args, **kw):
             pass
         
+        # Construct a __call__() signature for use with fire
+        _post_call_sig = inspect.signature(__post_call__)
+        _call_sig = _construct_sig_with_inserted_options(_post_call_sig)
+        @with_signature(_call_sig)
+        def _dummy_call(self):
+            pass
+        
+        # Extract the __post_call__ parameter names
+        _post_call_param_names = list(_post_call_sig.parameters.keys())[1:]
+                
         # Define a __call__() that handles any supplied options before
         # calling __post_call__() without the option parameters.
         def __call__(self, *args, **kw):
             print(f"__call__ args: {args} kw: {kw}")
+            print(f"             : option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
             self._set_option_attrs_from_args(**option_kw)
+            try:
+                self._validate_post_call_args(*args, **kw)
+            except ValidationError as exc:
+                print_validation_errors(
+                    exc, value_dict=kw,
+                    arg_names=self._post_call_param_names, arg_values=args)
+                sys.exit(-1)
             return self.__post_call__(*args, **kw)
         
-        # Construct a __call__() signature for use with fire
-        _call_sig = _construct_sig_with_inserted_options(__post_call__)
-        @with_signature(_call_sig)
-        def _dummy_call(self):
+        @validate_arguments
+        @with_signature(inspect.signature(__post_call__))
+        def _validate_post_call_args(self, *args, **kw):
             pass
         
         def _extract_option_kw(self, kw):
@@ -139,15 +180,17 @@ def group(C=DECORATED):
                 if o_name in kw:
                     option_kw[o_name] = kw.pop(o_name)
             return option_kw
-        
-        def _set_option_attrs_from_args(self, **kw):
-            print(f"  setting options: {kw}")
-            for key, value in kw.items():
-                self._option_data[key] = value
 
-        # Placeholder
         def _set_missing_option_attrs_from_defaults(self):
-            pass
+            print("  setting missing option attrs from defaults")
+            for p in option_params:
+                print(f"    {p.name}: {p.default}")
+                self._option_data[p.name] = p.default
+                
+        def _set_option_attrs_from_args(self, **kw):
+            print(f"  setting options from kw args: {kw}")
+            for key, value in kw.items():
+                setattr(self, key, value)
 
         def __getattr__(self, key):
             if key in self._option_data:
@@ -157,13 +200,19 @@ def group(C=DECORATED):
             
         def __setattr__(self, key, value):
             if key != "_option_data" and key in self._option_data:
-                print(f"setting {key} to {value}")
+                print(f"    setting {key} to {value}")
+                try:
+                    check_type(key, value, option_types[key])
+                except ValidationError as exc:
+                    print_validation_errors(exc, value=value)
+                    sys.exit(-1)
                 self._option_data[key] = value
                 return
             return super().__setattr__(key, value)
          
         def _restore_defaults(self):
             self._option_data.clear()
+            self._set_missing_option_attrs_from_defaults()
             
         # Piece together top-level documentation string
         __doc__ = _make_doc(C)

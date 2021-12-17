@@ -4,6 +4,11 @@
 
 import fire
 from ticli import option
+from ticli.validation import (
+    validate_arguments,
+    ValidationError,
+    print_validation_errors,
+)
 
 @option.group
 class Test:
@@ -25,15 +30,18 @@ class Test:
               y: second init arg
         """
         print(f"__post_init__: x:{x} y:{y}")
-
-    def __post_call__(self, arg=7):
+        print(f"             : option_data: {self._option_data}")
+        
+    def __post_call__(self, arg:int=7):
         """ Args:
               arg: first invoke arg
         """
         print(f"__post_call__: arg:{arg}")
+        print(f"             : option_data: {self._option_data}")
         return self
     
-    def f(self, c):
+    @validate_arguments
+    def f(self, c:int):
         """
         Example Command.
 
@@ -43,11 +51,13 @@ class Test:
           c: input argument for f command
         """
         print(f"f: c:{c}")
+        print(f" : option_data: {self._option_data}")
 
     def reset(self):
         """
         Restores option settings to the default values.
         """
+        print(f"  reset: option_data: {self._option_data}")
         option.restore_defaults(self)
         return self
     
@@ -57,4 +67,7 @@ if __name__ == '__main__':
     import os
     os.environ["PAGER"] = "cat"
     
-    fire.Fire(Test)
+    try:
+        fire.Fire(Test)
+    except ValidationError as exc:
+        print_validation_errors(exc)
