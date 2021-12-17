@@ -15,6 +15,11 @@ from . import fire
 @class_decorator
 def group(C=DECORATED):
 
+    # Add validation for public methods
+    for name, member in C.__dict__.items():
+        if not name.startswith("_") and inspect.isfunction(member):
+            setattr(C, name, validate_arguments(member))
+            
     # Retrieve option names and types from class annotations
     option_types = C.__dict__.get('__annotations__', {})
     option_names = list(option_types.keys())

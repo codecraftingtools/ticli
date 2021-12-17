@@ -2,7 +2,7 @@
 
 # Copyright (C) 2021 NTA, Inc.
 
-from ticli import option, Fire, validate_arguments
+from ticli import option, Fire
 
 @option.group
 class Test:
@@ -34,7 +34,6 @@ class Test:
         print(f"             : option_data: {self._option_data}")
         return self
     
-    @validate_arguments
     def f(self, c:int):
         """
         Example Command.
