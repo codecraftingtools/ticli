@@ -20,19 +20,37 @@ def group(C=DECORATED):
         if not name.startswith("_") and inspect.isfunction(member):
             setattr(C, name, validate_arguments(member))
             
+    # Find any option group base classes
+    base_option_groups = []
+    for b in C.__bases__:
+        if hasattr(b, "_is_option_group") and b._is_option_group:
+            base_option_groups.append(b)
+        
+    # Start with the previous set of options
+    option_types = {}
+    option_values = {}
+    for b in  base_option_groups:
+        option_types.update(b._option_types)
+        option_values.update(b._option_values)
+                             
     # Retrieve option names and types from class annotations
-    option_types = C.__dict__.get('__annotations__', {})
-    option_names = list(option_types.keys())
+    new_option_types = C.__dict__.get('__annotations__', {})
+    new_option_names = list(new_option_types.keys())
 
     # Remove class attributes for options with default values and capture the
     # default values
-    option_values = {}
-    for opt_name in option_names:
+    new_option_values = {}
+    for opt_name in new_option_names:
         if hasattr(C, opt_name):
             opt_value = getattr(C, opt_name)
-            option_values[opt_name] = opt_value
+            new_option_values[opt_name] = opt_value
             delattr(C, opt_name)
 
+    # Add new items to the overall option information variables
+    option_types.update(new_option_types)
+    option_values.update(new_option_values)
+    option_names = list(option_types.keys())
+    
     # Construct a function signature that accepts the options as arguments
     def ref_fun(self):
         pass
@@ -66,24 +84,51 @@ def group(C=DECORATED):
         return new_sig
     
     
-    # Piece together top-level documentation string
-    def _make_doc(cls):
+    # Piece together option docs for top-level documentation string
+    def _make_options_doc(cls):
+        docs = []
+        class_doc = cls.__doc__
+        if class_doc:
+            docs.append(inspect.cleandoc(class_doc))
+        # Add argument portion of base class docs
+        for b in base_option_groups:
+            base_class_doc = b._options_doc
+            if base_class_doc:
+                # Strip off class description and just keep option docs
+                idx = base_class_doc.find("Args:")
+                if idx >= 0:
+                    # Go back to the beginning of the Args line, if needed
+                    idx2 = base_class_doc.rfind("\n", 0, idx)
+                    if idx2 >= 0:
+                        idx=idx2
+                    base_class_doc = base_class_doc[idx:]
+                    docs.append(inspect.cleandoc(base_class_doc))
+        return "\n".join(docs)
+    
+    # Piece together extra method docs for top-level documentation string
+    def _make_extra_doc(cls):
         methods_with_doc = [
             "__post_init__",
             "__post_call__",
         ]
-        docs = [cls.__doc__]
+        docs = []
         for m_name in methods_with_doc:
             doc = ""
             if hasattr(cls, m_name):
                 m = getattr(cls, m_name)
                 if hasattr(m, "__doc__"):
                     doc = m.__doc__
-            docs.append(doc)
-        return "".join(docs)
+            if doc:
+                docs.append(inspect.cleandoc(doc))
+        return "\n".join(docs)
         
     class D(C):
-        # Capture option names for use in __init__ and __call__
+        # Mark class as an option class
+        _is_option_group = True
+        
+        # Capture info about options for later use
+        _option_types = option_types
+        _option_values = option_values
         _option_names = option_names
         
         # Provide default implementations for required methods, if necessary
@@ -214,7 +259,8 @@ def group(C=DECORATED):
             self._set_missing_option_attrs_from_defaults()
             
         # Piece together top-level documentation string
-        __doc__ = _make_doc(C)
+        _options_doc = _make_options_doc(C)
+        __doc__ = "\n".join([_options_doc, _make_extra_doc(C)])
         
     fire.decorators._SetMetadata(
         D, fire.decorators.FIRE_STAND_IN, D._dummy_init)
