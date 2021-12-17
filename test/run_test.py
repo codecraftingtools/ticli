@@ -2,13 +2,7 @@
 
 # Copyright (C) 2021 NTA, Inc.
 
-import fire
-from ticli import option
-from ticli.validation import (
-    validate_arguments,
-    ValidationError,
-    print_validation_errors,
-)
+from ticli import option, Fire, validate_arguments
 
 @option.group
 class Test:
@@ -62,12 +56,4 @@ class Test:
         return self
     
 if __name__ == '__main__':
-    
-    # Work-around to keep fire from using "less" to show help output
-    import os
-    os.environ["PAGER"] = "cat"
-    
-    try:
-        fire.Fire(Test)
-    except ValidationError as exc:
-        print_validation_errors(exc)
+    Fire(Test)

@@ -15,8 +15,8 @@ def check_type(arg_name, value, type_annotation):
     M(**{arg_name: value})
 
 # Print ValidationError information from the pydantic package
-def print_validation_errors(exc, value=None, value_dict=None,
-                            arg_names=None, arg_values=None):
+def print_validation_error(exc, value=None, value_dict=None,
+                           arg_names=None, arg_values=None):
     already_printed = []
     for error in exc.errors():
         

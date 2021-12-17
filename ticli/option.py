@@ -6,16 +6,11 @@ from makefun import with_signature
 from decopatch import class_decorator, DECORATED
 from .validation import (
     check_type,
-    print_validation_errors,
+    print_validation_error,
     ValidationError,
     validate_arguments,
 )
-
-try:
-    import fire.decorators
-    _fire_package_present = True
-except:
-    _fire_package_present = False
+from . import fire
 
 @class_decorator
 def group(C=DECORATED):
@@ -116,14 +111,13 @@ def group(C=DECORATED):
         # calling __post_init__() without the option parameters.
         def __init__(self, *args, **kw):
             self._option_data = {}
-            if _fire_package_present:
-                # Tell fire to use the current option values as defaults
-                fire.decorators._SetMetadata(
-                    self, fire.decorators.FIRE_DEFAULTS_DICT,
-                    self._option_data)
-                # Tell fire to use the desired signature for __call__
-                fire.decorators._SetMetadata(
-                    self, fire.decorators.FIRE_STAND_IN, D._dummy_call)
+            # Tell fire to use the current option values as defaults
+            fire.decorators._SetMetadata(
+                self, fire.decorators.FIRE_DEFAULTS_DICT,
+                self._option_data)
+            # Tell fire to use the desired signature for __call__
+            fire.decorators._SetMetadata(
+                self, fire.decorators.FIRE_STAND_IN, D._dummy_call)
             print(f"__init__ args: {args} kw: {kw}")
             print(f"             : option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
@@ -132,7 +126,7 @@ def group(C=DECORATED):
             try:
                 self._validate_post_init_args(*args, **kw)
             except ValidationError as exc:
-                print_validation_errors(
+                print_validation_error(
                     exc, value_dict=kw,
                     arg_names=self._post_init_param_names, arg_values=args)
                 sys.exit(-1)
@@ -163,7 +157,7 @@ def group(C=DECORATED):
             try:
                 self._validate_post_call_args(*args, **kw)
             except ValidationError as exc:
-                print_validation_errors(
+                print_validation_error(
                     exc, value_dict=kw,
                     arg_names=self._post_call_param_names, arg_values=args)
                 sys.exit(-1)
@@ -204,7 +198,7 @@ def group(C=DECORATED):
                 try:
                     check_type(key, value, option_types[key])
                 except ValidationError as exc:
-                    print_validation_errors(exc, value=value)
+                    print_validation_error(exc, value=value)
                     sys.exit(-1)
                 self._option_data[key] = value
                 return
@@ -217,9 +211,8 @@ def group(C=DECORATED):
         # Piece together top-level documentation string
         __doc__ = _make_doc(C)
         
-    if _fire_package_present:
-        fire.decorators._SetMetadata(
-            D, fire.decorators.FIRE_STAND_IN, D._dummy_init)
+    fire.decorators._SetMetadata(
+        D, fire.decorators.FIRE_STAND_IN, D._dummy_init)
     
     return D
 
