@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Jeffrey A. Webb
 # Copyright (C) 2021 NTA, Inc.
 
 import sys
@@ -168,6 +169,19 @@ def group(C=DECORATED):
             # Tell fire to use the desired signature for __call__
             fire.decorators._SetMetadata(
                 self, fire.decorators.FIRE_STAND_IN, D._dummy_call)
+            # Check if any positional arguments for __post_call__ are defined
+            post_call_has_positional_args = False
+            for param_name, param_val in \
+                self._post_call_sig.parameters.items():
+                if param_name == "self":
+                    continue
+                if param_val.default == inspect.Parameter.empty:
+                    post_call_has_positional_args = True
+            if post_call_has_positional_args:
+                # Tell fire to allow positional arguments for __call__
+                fire.decorators._SetMetadata(
+                    self, fire.decorators.ACCEPTS_POSITIONAL_ARGS,
+                    D._dummy_call)
             print(f"__init__ args: {args} kw: {kw}")
             print(f"             : option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
