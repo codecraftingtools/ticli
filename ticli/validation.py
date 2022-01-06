@@ -1,3 +1,4 @@
+# Copyright (C) 2022 Jeffrey A. Webb
 # Copyright (C) 2021 NTA, Inc.
 
 import sys
@@ -56,7 +57,7 @@ def print_validation_error(exc, value=None, value_dict=None,
         if value_str:
             value_str = f"'{value_str}' "
         m = f"{sys.argv[0]}: error: invalid value " + value_str + \
-            f"supplied for argument '{error_loc}': {error['msg']}"
+            f"supplied for argument '{error_loc.upper()}': {error['msg']}"
         if not m in already_printed:
             print(m)
             already_printed.append(m)
