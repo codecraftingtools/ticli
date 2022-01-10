@@ -13,13 +13,21 @@ from .validation import (
 )
 from . import fire
 
+def _make_validating_version_of(member):
+    g = validate_arguments(member)
+    @with_signature(inspect.signature(member))
+    def f(self, *args, **kw):
+        return g(self, *args, **kw)
+    return f
+
 @class_decorator
 def group(C=DECORATED):
 
     # Add validation for public methods
-    for name, member in C.__dict__.items():
+    for name, member in dict(C.__dict__).items():
         if not name.startswith("_") and inspect.isfunction(member):
-            setattr(C, name, validate_arguments(member))
+            # Replace the unvalidated method with one that validates arguments
+            setattr(C, name, _make_validating_version_of(member))
             
     # Find any option group base classes
     base_option_groups = []
