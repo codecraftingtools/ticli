@@ -18,6 +18,7 @@ def _make_validating_version_of(member):
     @with_signature(inspect.signature(member))
     def f(self, *args, **kw):
         return g(self, *args, **kw)
+    f.__doc__ = member.__doc__
     return f
 
 @class_decorator
