@@ -10,16 +10,9 @@ from .validation import (
     print_validation_error,
     ValidationError,
     validate_arguments,
+    validate_method_arguments,
 )
 from . import fire
-
-def _make_validating_version_of(member):
-    g = validate_arguments(member)
-    @with_signature(inspect.signature(member))
-    def f(self, *args, **kw):
-        return g(self, *args, **kw)
-    f.__doc__ = member.__doc__
-    return f
 
 @class_decorator
 def group(C=DECORATED):
@@ -28,7 +21,7 @@ def group(C=DECORATED):
     for name, member in dict(C.__dict__).items():
         if not name.startswith("_") and inspect.isfunction(member):
             # Replace the unvalidated method with one that validates arguments
-            setattr(C, name, _make_validating_version_of(member))
+            setattr(C, name, validate_method_arguments(member))
             
     # Find any option group base classes
     base_option_groups = []
@@ -205,7 +198,7 @@ def group(C=DECORATED):
                 sys.exit(-1)
             return self.__post_init__(*args, **kw)
 
-        @validate_arguments
+        @validate_method_arguments
         @with_signature(inspect.signature(__post_init__))
         def _validate_post_init_args(self, *args, **kw):
             pass
@@ -236,7 +229,7 @@ def group(C=DECORATED):
                 sys.exit(-1)
             return self.__post_call__(*args, **kw)
         
-        @validate_arguments
+        @validate_method_arguments
         @with_signature(inspect.signature(__post_call__))
         def _validate_post_call_args(self, *args, **kw):
             pass

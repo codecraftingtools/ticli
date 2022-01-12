@@ -2,15 +2,35 @@
 # Copyright (C) 2021 NTA, Inc.
 
 import sys
-from pydantic import create_model as _create_model
+import pydantic
 
-# Pull these symbols into the module namespace for use by others
-from pydantic import validate_arguments, ValidationError
+# Pull this symbol into the module namespace for use by others
+from pydantic import ValidationError
+
+def validate_method_arguments(member):
+    import inspect
+    from makefun import with_signature
+    g = pydantic.validate_arguments(member)
+    @with_signature(inspect.signature(member))
+    def f(self, *args, **kw):
+        return g(self, *args, **kw)
+    f.__doc__ = member.__doc__
+    return f
+
+def validate_arguments(member):
+    import inspect
+    from makefun import with_signature
+    g = pydantic.validate_arguments(member)
+    @with_signature(inspect.signature(member))
+    def f(*args, **kw):
+        return g(*args, **kw)
+    f.__doc__ = member.__doc__
+    return f
 
 # Name and signature inspired by the Typeguard package
 def check_type(arg_name, value, type_annotation):
     default_value = None # does not matter
-    M = _create_model(
+    M = pydantic.create_model(
         "Temp_Model",
         **{arg_name: (type_annotation, default_value)})
     M(**{arg_name: value})
