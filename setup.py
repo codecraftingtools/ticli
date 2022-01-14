@@ -14,7 +14,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        #"fire", # optional
+        #"fire", # optional, but must be codecraftsmen branch
         "pydantic",
         "makefun",
         "decopatch",
