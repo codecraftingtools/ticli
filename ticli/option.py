@@ -147,11 +147,11 @@ def group(C=DECORATED):
             __post_call__ = C.__post_call__
         else:
             def __post_call__(self):
-                pass
+                return self
         if not "__str__" in C.__dict__:
             # Otherwise help is printed on command completion in fire
             def __str__(self):
-                return ""
+                return "default"
 
         # Construct an __init__() signature for use with fire
         _post_init_sig = inspect.signature(__post_init__)
