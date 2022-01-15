@@ -148,6 +148,7 @@ def group(C=DECORATED):
         else:
             def __post_call__(self):
                 return self
+            _empty_call = True
         if not "__str__" in C.__dict__:
             # Otherwise help is printed on command completion in fire
             def __str__(self):
