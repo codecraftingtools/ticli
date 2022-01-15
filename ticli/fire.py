@@ -12,8 +12,7 @@ import inspect
 from .validation import validate_arguments
 
 try:
-    from fire import decorators
-    from fire import Fire
+    from fire import Fire, decorators
     
 # Try to make due without fire package being installed
 except:
@@ -24,7 +23,7 @@ except:
         pass
     
     Fire = dummy
-    decorators = Dummy
+    decorators = Dummy()
     decorators._SetMetadata = dummy
     decorators.FIRE_DEFAULTS_DICT = "FIRE_DEFAULTS_DICT"
     decorators.FIRE_STAND_IN = "FIRE_STAND_IN"
