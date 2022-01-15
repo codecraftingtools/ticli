@@ -26,7 +26,7 @@ class Farewell:
     def __post_init__(self, parent):
         self._parent = parent
         
-    def __post_call__2(self):
+    def __post_call__(self):
         farewells = {
             "formal": "Goodbye.",
             "informal": "Bye!",
