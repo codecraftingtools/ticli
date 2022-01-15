@@ -23,8 +23,8 @@ class Farewell:
     """
     dialect: Dialect = "formal"
     
-    def __post_init__(self, parent):
-        self._parent = parent
+    def __post_init__(self, config):
+        self._config = config
         
     def __post_call__(self):
         farewells = {
@@ -34,12 +34,12 @@ class Farewell:
         }
         farewell = farewells[self.dialect]
         
-        if self._parent.verbose:
+        if self._config.verbose:
             print("getting ready to bid you farewell")
             
         print(f"{farewell}")
         
-        if self._parent.verbose:
+        if self._config.verbose:
             print("finished bidding you farewell")
 
 Unit = Literal["feet", "inches", "meters"]
