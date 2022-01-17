@@ -57,7 +57,7 @@ class Test:
         Restores option settings to the default values.
         """
         print(f"  reset: option_data: {self._option_data}")
-        option.restore_defaults(self)
+        option.restore_defaults_for(self)
         return self
 
 @option.group

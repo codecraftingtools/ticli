@@ -296,5 +296,5 @@ def command(C=DECORATED):
         D, fire.decorators.FIRE_VALUE_TYPE, "command")
     return D
 
-def restore_defaults(s):
+def restore_defaults_for(s):
     s._restore_defaults()
