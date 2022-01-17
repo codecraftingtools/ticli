@@ -4,7 +4,7 @@
 
 # Author: Jeff Webb <jeff.webb@codecraftsmen.org>
 
-from .option import command
+from .option import command, enable_debug
 from .validation import (
     ValidationError,
     print_validation_error,

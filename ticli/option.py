@@ -17,6 +17,11 @@ from .validation import (
 )
 from . import fire
 
+_debug_print = False
+def _print(*args, **kw):
+    if _debug_print:
+        print(*args, **kw)
+    
 @class_decorator
 def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
 
@@ -189,8 +194,9 @@ def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
                 fire.decorators._SetMetadata(
                     self, fire.decorators.ACCEPTS_POSITIONAL_ARGS,
                     D._dummy_call)
-            print(f"__init__ args: {args} kw: {kw}")
-            print(f"             : option_data: {self._option_data}")
+            _print(f"__init__ args: {args}")
+            _print(f"         kw: {kw}")
+            _print(f"         option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
             self._handle_and_remove_option_group_kw(kw)
             self._set_missing_option_attrs_from_defaults()
@@ -222,8 +228,9 @@ def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
         # Define a __call__() that handles any supplied options before
         # calling __post_call__() without the option parameters.
         def __call__(self, *args, **kw):
-            print(f"__call__ args: {args} kw: {kw}")
-            print(f"             : option_data: {self._option_data}")
+            _print(f"__call__ args: {args}")
+            _print(f"         kw: {kw}")
+            _print(f"         option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
             self._set_option_attrs_from_args(**option_kw)
             try:
@@ -255,13 +262,13 @@ def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
                     self._next_in_chain = self
         
         def _set_missing_option_attrs_from_defaults(self):
-            print("  setting missing option attrs from defaults")
+            _print("  setting missing option attrs from defaults")
             for p in option_params:
-                print(f"    {p.name}: {p.default}")
+                _print(f"    {p.name}: {p.default}")
                 self._option_data[p.name] = p.default
                 
         def _set_option_attrs_from_args(self, **kw):
-            print(f"  setting options from kw args: {kw}")
+            _print(f"  setting options from kw args: {kw}")
             for key, value in kw.items():
                 setattr(self, key, value)
 
@@ -273,7 +280,7 @@ def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
             
         def __setattr__(self, key, value):
             if key != "_option_data" and key in self._option_data:
-                print(f"    setting {key} to {value}")
+                _print(f"    setting {key} to {value}")
                 try:
                     check_type(key, value, option_types[key])
                 except ValidationError as exc:
@@ -313,3 +320,7 @@ def next_in_chain_after(g):
 
 def set_next_in_chain_after(g, v):
     g._next_in_chain = v
+
+def enable_debug():
+    global _debug_print
+    _debug_print = True

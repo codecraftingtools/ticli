@@ -6,6 +6,9 @@
 
 # Author: Jeff Webb <jeff.webb@codecraftsmen.org>
 
+import ticli
+ticli.enable_debug()
+
 from ticli import option, Fire
 
 @option.group
@@ -28,8 +31,8 @@ class Test:
           x: first init arg
           y: second init arg
         """
-        print(f"__post_init__: x:{x} y:{y}")
-        print(f"             : option_data: {self._option_data}")
+        print(f"  __post_init__ x:{x} y:{y}")
+        print(f"                option_data: {self._option_data}")
         
         # Set next_in_chain for testing purposes (usually set via constructor)
         option.set_next_in_chain_after(self, self)
@@ -39,8 +42,8 @@ class Test:
         Args:
           arg: first invoke arg
         """
-        print(f"__post_call__: arg:{arg}")
-        print(f"             : option_data: {self._option_data}")
+        print(f"  __post_call__ arg:{arg}")
+        print(f"                option_data: {self._option_data}")
         return option.next_in_chain_after(self)
     
     def f(self, c:int):
@@ -52,15 +55,15 @@ class Test:
         Args:
           c: input argument for f command
         """
-        print(f"f: c:{c}")
-        print(f" : option_data: {self._option_data}")
+        print(f"f c:{c}")
+        print(f"  option_data: {self._option_data}")
         return option.next_in_chain_after(self)
 
     def reset(self):
         """
         Restores option settings to the default values.
         """
-        print(f"  reset: option_data: {self._option_data}")
+        print(f"reset: option_data: {self._option_data}")
         option.restore_defaults_for(self)
         return option.next_in_chain_after(self)
 
@@ -82,8 +85,11 @@ class Extended(Test):
           q: first extended init arg
           r: second extended init arg
         """
-        print(f"Extended __post_init__: q:{q} r:{r}")
-        print(f"                      : option_data: {self._option_data}")
+        print(f"  Extended __post_init__ q:{q} r:{r}")
+        print(f"                         option_data: {self._option_data}")
+        
+        # Set next_in_chain for testing purposes (usually set via constructor)
+        option.set_next_in_chain_after(self, self)
 
 @option.group
 class Other:
