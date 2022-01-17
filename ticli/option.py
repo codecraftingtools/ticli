@@ -284,7 +284,16 @@ def group(C=DECORATED):
         
     fire.decorators._SetMetadata(
         D, fire.decorators.FIRE_STAND_IN, D._dummy_init)
+    fire.decorators._SetMetadata(
+        D, fire.decorators.FIRE_VALUE_TYPE, "group")
     
+    return D
+
+@class_decorator
+def command(C=DECORATED):
+    D = group(C)
+    fire.decorators._SetMetadata(
+        D, fire.decorators.FIRE_VALUE_TYPE, "command")
     return D
 
 def restore_defaults(s):

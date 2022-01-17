@@ -6,12 +6,12 @@
 
 # Author: Jeff Webb <jeff.webb@codecraftsmen.org>
 
-from ticli import option, Fire
+from ticli import command, Fire
 from typing import Literal
 
 Dialect = Literal["formal", "informal", "hillbilly"]
 
-@option.group
+@command
 class Farewell:
     """
     Farewell command.

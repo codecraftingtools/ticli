@@ -27,6 +27,7 @@ except:
     decorators._SetMetadata = dummy
     decorators.FIRE_DEFAULTS_DICT = "FIRE_DEFAULTS_DICT"
     decorators.FIRE_STAND_IN = "FIRE_STAND_IN"
+    decorators.FIRE_VALUE_TYPE = "FIRE_VALUE_TYPE"
 
 _Fire = Fire
 def Fire(component, *args, **kw):

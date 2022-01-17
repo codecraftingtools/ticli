@@ -6,12 +6,12 @@
 
 # Author: Jeff Webb <jeff.webb@codecraftsmen.org>
 
-from ticli import option, Fire
+from ticli import command, Fire
 from typing import Literal
 
 Dialect = Literal["formal", "informal", "hillbilly"]
 
-@option.group
+@command
 class Farewell:
     """
     Farewell command.
@@ -32,7 +32,7 @@ class Farewell:
         farewell = farewells[self.dialect]
         print(f"{farewell}")     
     
-@option.group
+@command
 class Verbose_Farewell(Farewell):
     """
     Verbose Farewell program.

@@ -4,8 +4,7 @@
 
 # Author: Jeff Webb <jeff.webb@codecraftsmen.org>
 
-from .option import group as _x
-from .types import FilePath as _x
+from .option import command
 from .validation import (
     ValidationError,
     print_validation_error,
