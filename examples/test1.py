@@ -31,6 +31,9 @@ class Test:
         print(f"__post_init__: x:{x} y:{y}")
         print(f"             : option_data: {self._option_data}")
         
+        # Set next_in_chain for testing purposes (usually set via constructor)
+        option.set_next_in_chain_after(self, self)
+        
     def __post_call__(self, arg:int=7):
         """
         Args:
@@ -38,7 +41,7 @@ class Test:
         """
         print(f"__post_call__: arg:{arg}")
         print(f"             : option_data: {self._option_data}")
-        return self
+        return option.next_in_chain_after(self)
     
     def f(self, c:int):
         """
@@ -51,6 +54,7 @@ class Test:
         """
         print(f"f: c:{c}")
         print(f" : option_data: {self._option_data}")
+        return option.next_in_chain_after(self)
 
     def reset(self):
         """
@@ -58,7 +62,7 @@ class Test:
         """
         print(f"  reset: option_data: {self._option_data}")
         option.restore_defaults_for(self)
-        return self
+        return option.next_in_chain_after(self)
     
 if __name__ == '__main__':
     Fire(Test)

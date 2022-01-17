@@ -18,7 +18,7 @@ from .validation import (
 from . import fire
 
 @class_decorator
-def group(C=DECORATED):
+def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
 
     # Add validation for public methods
     for name, member in dict(C.__dict__).items():
@@ -147,11 +147,12 @@ def group(C=DECORATED):
             __post_call__ = C.__post_call__
         else:
             def __post_call__(self):
-                return self
-            _empty_call = True
+                return self._next_in_chain
         if not "__str__" in C.__dict__:
             # Otherwise help is printed on command completion in fire
             def __str__(self):
+                if self._next_in_chain is self:
+                    return ""
                 return "default"
 
         # Construct an __init__() signature for use with fire
@@ -191,6 +192,7 @@ def group(C=DECORATED):
             print(f"__init__ args: {args} kw: {kw}")
             print(f"             : option_data: {self._option_data}")
             option_kw = self._extract_option_kw(kw)
+            self._handle_and_remove_option_group_kw(kw)
             self._set_missing_option_attrs_from_defaults()
             self._set_option_attrs_from_args(**option_kw)
             try:
@@ -245,6 +247,13 @@ def group(C=DECORATED):
                     option_kw[o_name] = kw.pop(o_name)
             return option_kw
 
+        def _handle_and_remove_option_group_kw(self, kw):
+            self._next_in_chain = None
+            if next_in_chain_param_name in kw:
+                self._next_in_chain = kw.pop(next_in_chain_param_name)
+                if self._next_in_chain == "self":
+                    self._next_in_chain = self
+        
         def _set_missing_option_attrs_from_defaults(self):
             print("  setting missing option attrs from defaults")
             for p in option_params:
@@ -298,3 +307,9 @@ def command(C=DECORATED):
 
 def restore_defaults_for(s):
     s._restore_defaults()
+
+def next_in_chain_after(g):
+    return g._next_in_chain
+
+def set_next_in_chain_after(g, v):
+    g._next_in_chain = v
