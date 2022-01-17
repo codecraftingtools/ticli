@@ -147,7 +147,7 @@ def group(C=DECORATED, next_in_chain_param_name="next_in_chain"):
             __post_call__ = C.__post_call__
         else:
             def __post_call__(self):
-                return self._next_in_chain
+                return self
         if not "__str__" in C.__dict__:
             # Otherwise help is printed on command completion in fire
             def __str__(self):
